@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  
+  <title>Point REST API demo in single web page by @thomasswilliams</title>
+  
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.min.css">
+  <!-- FontAwesome glyphs and icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css">
+  <!-- weather icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.9/css/weather-icons.min.css">
+  
+  <!-- styles for page -->
+  <style>
+    body { 
+      background-color: #fbfbff; 
+      /* native fonts inspired by http://daverupert.com/2016/03/spring-cleaning/ */
+      color: #3a3a3a; 
+      font-family: 'Helvetica Neue', 'Roboto', 'Segoe UI', sans-serif;
+    }
+    #main { 
+      background-color: #fafafe; 
+      /* allow enough padding for fixed top navbar */
+      padding-top: 65px; 
+    } 
+    .col { 
+      /* add padding to columns */
+      padding: 10px;     
+    } 
+    /* add bottom border to navbar */
+    .navbar { 
+      border-bottom: 5px solid #f4f4f7; 
+      padding-bottom: 3px; 
+    }
+    /* move "refreshData" button slightly left (too much left padding) */
+    button#refreshData { 
+      margin-left: -10px;
+    }  
+    /* headings under charts */
+    h4 { 
+      padding-top: 6px;
+      color: #9E9E9E; 
+      text-align: center; 
+    }
+  </style>
+</head>
+<body>
+  
+  <nav class="navbar navbar-fixed-top">
+    <div class="container">
+      <form class="form-inline col-md-7" style="padding-left: 0">
+        <div class="form-group">
+          <label for="devices" style="margin-bottom: 0 !important; vertical-align: middle">My Point devices&nbsp;</label>
+          <!-- select is disabled until logged in -->
+          <select class="form-control c-select" id="devices" disabled> </select>
+        </div>
+        <button type="button" id="showLogin" class="btn btn-primary" data-toggle="modal" data-target="#loginModal">Log in</button>
+      </form>
+      <!-- refresh panel, initially hidden -->
+      <div class="col-md-5" style="vertical-align: middle; display: none" id="lastUpdatedOuter">
+        <p class="form-control-static text-muted pull-right"><button type="button" id="refreshData" class="btn btn-link btn-sm" onclick="drawAllCharts()"><i class="fa fa-refresh"></i></button></p>
+      </div>
+    </div>
+  </nav>
+  
+  <!-- Bootstrap grid -->
+  <div class="container" id="main">
+    <div class="row">
+      <div class="col col-md-4">
+        <!-- sound chart -->
+        <div id="chart_div_sound_avg_levels" style="width: 330px; height: 300px"></div>
+        <h4><i class="fa fa-volume-up"></i> Noise level</h4>
+      </div>
+      <div class="col col-md-4">
+        <!-- temperature chart -->
+        <div id="chart_div_temperature" style="width: 330px; height: 300px"></div>
+        <h4><i class="wi wi-thermometer"></i> Temperature (&deg;)</h4>
+      </div>
+      <div class="col col-md-4">
+        <!-- humidity chart -->
+        <div id="chart_div_humidity" style="width: 330px; height: 300px"></div>
+        <h4><i class="wi wi-humidity"></i> Humidity (%)</h4>
+      </div>
+    </div>
+    <div class="row">
+      <!-- about/credits -->
+      <p>By @thomasswilliams at Github repo <a href="https://github.com/thomasswilliams/Minut-Point-web-page-POC">https://github.com/thomasswilliams/Minut-Point-web-page-POC</a></p>
+      <p>Hover over the charts for values. Works in modern browsers - tested in Chrome on OS X.</p>
+    </div>
+  </div>
+  
+  <!-- modal to log in -->
+  <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true" style="display: none">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title">Log in</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-group">
+              <label class="form-control-label" for="username">Point email address:</label>
+              <input type="text" class="form-control" id="username" placeholder="Point user name"  style="width: 80% !important">
+            </div>
+            <div class="form-group">
+              <label class="form-control-label" for="password">Password:</label>
+              <input type="password" class="form-control" id="password" placeholder="Password" style="width: 60% !important">
+            </div>
+
+          </form>
+          <p>Your email address and password are not stored.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success" id="login">Get my devices</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- scripts - first jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-beta1/jquery.min.js"></script>
+  <!-- Bootstrap script -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/js/bootstrap.min.js"></script>
+  <!-- jQuery cookie for handling authorization -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.0/js.cookie.min.js"></script>
+  <!-- jQuery noty for alerts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-noty/2.3.8/packaged/jquery.noty.packaged.min.js"></script> 
+  <!-- Google charts -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <!-- scripts for page -->
+  <script>
+    // Google chart options for all charts 
+    var chart_options = {
+      vAxis: { 
+        // vertical axis always starts at zero 
+        minValue: 0, 
+        format: '#', 
+        viewWindow: { min: 0 }  
+      }, 
+      hAxis: {
+        format: 'H:mma', 
+        minValue: 0 
+      }, 
+      // no legend 
+      legend: {
+        position: 'none'
+      }, 
+      series: {
+        0: { color: '#f1ca3a' }
+      }, 
+      // smooth the line ** not working with Material charts March 2016 **
+      curveType: 'function', 
+      // set chart size in pixels 
+      width: 330,
+      height: 300
+    };
+    
+    // load Google chart libraries - APIs, line package 
+    google.charts.load('current', { 'packages': [ 'line' ] });
+    // not sure if this is needed - note set data for charts in "drawChart" - assume Google chart libraries have loaded 
+    google.charts.setOnLoadCallback(null);
+    
+    function drawAllCharts() { 
+      drawChart('temperature');
+      drawChart('humidity');
+      drawChart('sound_avg_levels');
+    }
+    
+    // callback to get data in JSON format, bind to chart object, and draw chart 
+    // will be called when Google chart libraries have loaded
+    // passed type is used to call API and bind to chart with same name 
+    function drawChart(type) { 
+      
+      // get today's date 
+      var today = new Date(); 
+      // calculate today midnight e.g. 0:00 as UTC string for JSON API start 
+      // hacky method by creating today's date at midnight, then converting to UTC (e.g. -10, -11) 
+      var start_UTC = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      // calculate today 11:59PM - add 24 hours, subtract one second from "start_UTC" 
+      var end_UTC = new Date(start_UTC); 
+      // add 24 hours (24 x minutes per hour x seconds per minute x milliseconds per second) 
+      end_UTC.setTime(end_UTC.getTime() + (24 * 60 * 60 * 1000)); 
+      // take away one second to make end 23:59.59
+      end_UTC.setTime(end_UTC.getTime() - (1000)); 
+
+      // if there is no Authorization cookie set, leave 
+      if (typeof Cookies.get('Authorization') === 'undefined') {
+        noty({ text: 'Log in to Point before attempting to get data.', type: 'information', layout: 'bottom', theme: 'relax', timeout: 18000 });
+        return; 
+      } 
+      // if there's no Point device ID, leave 
+      var device_id = $('#devices').val(); 
+      if (device_id === '') { 
+        noty({ text: 'No Point devices selected. Select a Point device and refresh the data.', type: 'information', layout: 'bottom', theme: 'relax', timeout: 18000 });
+        return; 
+      }
+      // make AJAX call to thingproxy 
+      $.ajax({
+        type: 'GET', 
+        // pass the device identifier and passed type as API 
+        url: 'http://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/devices/' + device_id + '/' + type, 
+        // querystring items 
+        data: { 
+          // start at midnight today 
+          // converted from local datetime to UTC  
+          start_at: start_UTC, 
+          // every 10 minutes 
+          resolution: 10
+        },
+        // insert necessary header for authorisation  
+        headers: { 
+          // pass header stored in cookie 
+          // will only be stored in cookie if user has logged on 
+          // requires js-cookie 
+          'Authorization': Cookies.get('Authorization')
+        }, 
+        // return type will be JSON 
+        dataType: 'json', 
+        // cross-domain call 
+        crossDomain: true 
+      })
+      .done(function(response) {
+        // adapted from http://www.santarosa.edu/~jperetz/projects/ajax-json/ and http://www.desert-home.com/2013/07/using-google-charts-api-with-xively.html 
+        // set array columns, will be titles, for X- and Y-axes 
+        var valuesArray = [[{ type: 'datetime' }, type]]; 
+        
+        // loop through returned response (JSON), which contains an array "values", each 
+        // element has "datetime" and "value"
+        $.each(response.values, function() {
+          // convert UTC string of "datetime" to an actual Javascript date   
+          var item = [new Date(this.datetime), this.value];
+          // add to array 
+          valuesArray.push(item);
+        });
+        
+        // do we have more than 1 item in array? 
+        // first item is array columns 
+        // if only 1 item, warn and leave         
+        if(valuesArray.length === 1) { 
+          noty({ text: 'No data for today for chart "' + type + '". Is your Point reachable?', type: 'information', layout: 'bottom', theme: 'relax', timeout: 18000 });
+          return; 
+        }  
+        
+        // convert array to something Google charts can handle 
+        var chart_data = google.visualization.arrayToDataTable(valuesArray);
+
+        // create a chart objects pointing to empty div "chart_div" 
+        var chart = new google.charts.Line(document.getElementById('chart_div_' + type));
+        // draw the chart 
+        // force the minimum to be same as start e.g. midnight this morning (convert UTC date back to numeric time) 
+        // and max to be 11:59PM 
+        // see more options at https://developers.google.com/chart/interactive/docs/gallery/linechart#creating-material-line-charts
+        chart.draw(chart_data, google.charts.Line.convertOptions(chart_options || { hAxis: { viewWindow: { min: (new Date(start_UTC)).getTime(), max: (new Date(end_UTC)).getTime() }}}));
+      })
+      .fail(function(error){
+        noty({ text: 'Could not get Point data for device: ' + error.responseText, type: 'error', layout: 'bottom', theme: 'relax', killer: true, timeout: 11000 });
+      });
+            
+    }
+    
+    function getDevices() { 
+      
+      // call Point API to get list of Points 
+      $.ajax({
+        type: 'GET', 
+        // call API 
+        url: 'http://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/devices', 
+        // insert necessary header for authorisation  
+        headers: { 
+          // pass header stored in cookie 
+          // will only be stored in cookie if user has logged on 
+          // requires js-cookie 
+          'Authorization': Cookies.get('Authorization')
+        }, 
+        // return type will be JSON 
+        dataType: 'json', 
+        // cross-domain call 
+        crossDomain: true 
+      })
+      .done(function(response) { 
+        
+        // remove existing items from combobox 
+        $('#devices').empty(); 
+        // loop through returned response and add items to combobox 
+        // return will have array of devices with settings, capabilities 
+        // combobox value is Point "device_id", label is "description" 
+        $.each(response.devices, function() {
+          $('#devices').append($('<option>', { value: this.device_id }).text(this.description)); 
+        });
+        // enable combobox 
+        $('#devices').removeAttr('disabled'); 
+        // change "Log in" button to "Logged in" 
+        $('#showLogin').html('<i class="fa fa-check"></i> Logged in'); 
+        // show the last updated/refresh panel 
+        $('#lastUpdatedOuter').show();
+
+        // draw charts 
+        drawAllCharts();  
+
+      })
+      .fail(function(error){
+        noty({ text: 'Could not get list of Point devices: ' + error.responseText, type: 'error', layout: 'bottom', theme: 'relax', killer: true, timeout: 11000 }); 
+      }); 
+            
+    } 
+    
+    function login() { 
+            
+      // call Point API, passing form values
+      $.ajax({
+        type: 'GET', 
+        // call API, passing generic client ID, and "grant type" of "password" 
+        // note username & password querystring values will be added as well, below 
+        url: 'http://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/auth/token?client_id=c33c3776f220cd90&grant_type=password', 
+        // pass username and password 
+        data: { 
+          username: $('#username').val(), 
+          password: $('#password').val()
+        },
+        // return type will be JSON 
+        dataType: 'json', 
+        // cross-domain call 
+        crossDomain: true 
+      })
+      .done(function(response) {
+        
+        // put the returned "Authorization" in to cookie 
+        // requires js-cookie
+        Cookies.set('Authorization', response.token_type + ' ' + response.access_token, { expires: 7, path: '' });
+        
+        // now that we have the cookie set, attempt to get devices 
+        getDevices(); 
+      })
+      .fail(function(error){
+        noty({ text: 'Could not log in using the Point email address and password: ' + error.responseText, type: 'error', layout: 'bottom', theme: 'relax', killer: true, timeout: 11000 }); 
+      }); 
+      
+      // hide the login modal dialog 
+      $('#loginModal').modal('hide');
+    }
+    
+    $(function() { 
+      
+      // if the Authorization cookie is present, get devices, 
+      // else put empty option in combo instructing user to log in 
+      if (typeof Cookies.get('Authorization') === 'undefined') { 
+        // not logged in 
+        $('#devices').append($('<option>', { value: '' }).text('Log in to see your devices')); 
+        // hide last update/refresh panel 
+        $('#lastUpdatedOuter').hide();
+      } else { 
+        $('#devices').append($('<option>', { value: '' }).text('Getting devices...'));
+        getDevices(); 
+      }
+      // wire up button click in login modal 
+      $('#login').click(login);
+    
+      // wire up focus on first field when login modal is shown 
+      $('#loginModal').on('shown.bs.modal', function () {
+        $('#userName').focus();
+      }); 
+      
+      // was this page loaded using the file:/// protocol? 
+      // adapted from https://stackoverflow.com/a/30270987 
+      // if so, display help 
+      if (document.location.host === '') { 
+        noty({ text: 'Load this web page using a web server. This web page won\'t function correctly when loaded using the "file://" protocol', type: 'warning', layout: 'bottom', theme: 'relax', timeout: 30000 })
+      }
+    });
+  </script>
+</body>
+</html>
