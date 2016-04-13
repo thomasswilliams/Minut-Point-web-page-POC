@@ -16,7 +16,7 @@ This single web page is (in my mind) the bare minimum required to display charts
 
 Anyone who wants to get this single web page working should review the following:
 
-1. The web page can't be served using the `file://` protocol; it must be hosted by a web server. If you are running OSX, this is as simple as:
+1. The web page can't be served using the `file://` protocol; it must be hosted by a web server. If you are running OS X, this is as simple as:
   * download the web page to a folder
   * open a terminal window at the folder, and run: `python -m SimpleHTTPServer 8000`
   * in your web browser, browse to http://localhost:8000/
@@ -36,7 +36,7 @@ Anyone who wants to get this single web page working should review the following
 9. The code behind the web page is open source, licensed under the MIT license - I hope someone else makes good use of it!
 
 ## How do I set it up? 
-Now that I have the grim warnings out of the way, below is how I've set it up on my computer, running OSX:
+Now that I have the grim warnings out of the way, below is how I've set it up on my computer, running OS X:
 - download the web page to a folder 
 - the web page should be named `index.html`
 - open a terminal window at the folder, and run: `python -m SimpleHTTPServer 8000`
