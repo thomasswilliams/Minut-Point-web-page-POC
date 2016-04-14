@@ -206,7 +206,7 @@
       $.ajax({
         type: 'GET', 
         // pass the device identifier and passed type as API 
-        url: 'http://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/devices/' + device_id + '/' + type, 
+        url: 'https://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/devices/' + device_id + '/' + type, 
         // querystring items 
         data: { 
           // start at midnight today 
@@ -272,7 +272,7 @@
       $.ajax({
         type: 'GET', 
         // call API 
-        url: 'http://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/devices', 
+        url: 'https://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/devices', 
         // insert necessary header for authorisation  
         headers: { 
           // pass header stored in cookie 
@@ -319,7 +319,7 @@
         type: 'GET', 
         // call API, passing generic client ID, and "grant type" of "password" 
         // note username & password querystring values will be added as well, below 
-        url: 'http://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/auth/token?client_id=c33c3776f220cd90&grant_type=password', 
+        url: 'https://thingproxy.freeboard.io/fetch/https://api.minut.com/draft1/auth/token?client_id=c33c3776f220cd90&grant_type=password', 
         // pass username and password 
         data: { 
           username: $('#username').val(), 
