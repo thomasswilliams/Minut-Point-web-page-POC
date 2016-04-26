@@ -1,5 +1,5 @@
 # Minut-Point-web-page-POC
-A proof-of-concept to chart Minut Point data, retrieved using the Point REST API, on a web page.
+A proof-of-concept to chart Minut Point data, retrieved using the Point REST API, on a web page. To see this running, check out https://minut-point-web-page-poc.herokuapp.com/
 
 ## Why?
 Recently I received a device that I Kickstarted back in November 2014 - [Point by Minut](https://www.minut.com/index.html)
